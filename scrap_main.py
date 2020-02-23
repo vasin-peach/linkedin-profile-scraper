@@ -8,6 +8,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException
+
 import time
 import pandas as pd
 import csv
@@ -31,12 +32,14 @@ class ScrapActor:
 
     # url = "https://www.linkedin.com/search/results/people/?keywords=" + keywords + "&origin=SUGGESTION&page="
 
-    # self.driver = webdriver.Chrome(executable_path='C:/chromedriver')
+    options = webdriver.ChromeOptions();
+    options.add_argument('headless');
+    options.add_argument('window-size=1200x600');
+    self.driver = webdriver.Chrome(executable_path='C:/chromedriver', chrome_options=options)
     # self.login(username, password)
     # actors = self.getActorByPage(url, pages_start, pages_range)
     # self.saveData('./data/actorsURL-' + date_now + '.csv', pd.Series(actors))
 
-    self.driver = webdriver.Chrome(executable_path='C:/chromedriver')
 
 
     # open default page
@@ -50,10 +53,6 @@ class ScrapActor:
         if cookie.get('expiry') != None: del cookie['expiry']
         self.driver.add_cookie(cookie)
     # if cookie not exist than login
-    else:
-      username = ''
-      password = ''
-      self.login(username, password)
 
 
     # get actor data by csv file
@@ -134,10 +133,16 @@ class ScrapActor:
   def getActorData(self, file):
 
     # read actorsURL csv file
+    saveURL = 'data/actors/' + self.date_now + '.json'
     actorURL = list(csv.reader(open(file, "r")))
     actors_raw = []
 
-    for actor in actorURL[:10]:
+    time = 1
+    for actor in actorURL:
+    # for actor in [['/in/panthasit-techawattanagan-009058140/']]:
+      print(str(time) + "/" + str(len(actorURL)) + " " + self.baseURL + actor[0])
+      time += 1
+
       self.driver.get(self.baseURL + actor[0])
 
       try:
@@ -148,14 +153,14 @@ class ScrapActor:
           scheight = .1
           while scheight < 9.9:
             self.driver.execute_script("window.scrollTo(0, document.body.scrollHeight/%s);" % scheight)
-            scheight += .3
+            scheight += .1
 
-          element = WebDriverWait(self.driver, 50).until(
-              EC.presence_of_element_located((By.CLASS_NAME, "education-section"))
-          )
+          # element = WebDriverWait(self.driver, 10).until(
+          #     EC.presence_of_element_located((By.CLASS_NAME, "education-section"))
+          # )
 
-          element = WebDriverWait(self.driver, 50).until(
-              EC.presence_of_element_located((By.CLASS_NAME, "pv-interests-section"))
+          element = WebDriverWait(self.driver, 10).until(
+              EC.presence_of_element_located((By.CLASS_NAME, "experience-section"))
           )
       except TimeoutException:
           print("Timed out waiting for page to load")
@@ -181,46 +186,52 @@ class ScrapActor:
 
       # ! Experience
       actor_experience = [] 
-      profile_experience_item = profile_section[0].select("div.pv-entity__summary-info")
-      for item in profile_experience_item:
-        position = {}
-        position['name'] = item.h3.getText()
-        position['company'] = item.select_one("p.pv-entity__secondary-title").getText()
-        position['date_range'] = item.select_one("h4.pv-entity__date-range").getText().strip()
-        actor_experience.append(position)
+      if bs_obj.select_one(".experience-section"):
+        profile_experience_item = profile_section[0].select("div.pv-entity__summary-info")
+        for item in profile_experience_item:
+          position = {}
+          position['name'] = item.h3.getText()
+          position['company'] = item.select_one("p.pv-entity__secondary-title").getText()
+          position['date_range'] = item.select_one("h4.pv-entity__date-range").getText().strip() if item.select_one("h4.pv-entity__date-range") else ""
+          actor_experience.append(position)
 
 
 
       # ! Education
       actor_education = []
-      profile_education_item = profile_section[1].select("div.pv-entity__summary-info")
-      for item in profile_education_item:
-        actor_education.append(item.select_one("h3.pv-entity__school-name").getText())
+      if bs_obj.select_one(".education-section"):
+        profile_education_item = profile_section[1].select("div.pv-entity__summary-info")
+        for item in profile_education_item:
+          actor_education.append(item.select_one("h3.pv-entity__school-name").getText())
 
 
 
       # ! Skill
-      self.driver.find_element_by_class_name("pv-skills-section__additional-skills").click() # find showmore button and click
-      bs_obj = BS(self.driver.page_source, 'html.parser') # new parser
-      profile_skill_section = bs_obj.select_one("section.pv-skill-categories-section")
+      actor_skill = []
+      if bs_obj.select_one(".pv-skills-section__additional-skills"):
+        self.driver.find_element_by_class_name("pv-skills-section__additional-skills").click() # find showmore button and click
+        bs_obj = BS(self.driver.page_source, 'html.parser') # new parser
+        profile_skill_section = bs_obj.select_one("section.pv-skill-categories-section")
 
-      try:
-        element = WebDriverWait(self.driver, 10).until(
-            EC.presence_of_element_located((By.CLASS_NAME, "pv-skill-category-list"))
-        )
-      except TimeoutException:
-          print("Timed out waiting for page to load")
-          self.driver.quit()
-          return False  
+        try:
+          element = WebDriverWait(self.driver, 10).until(
+              EC.presence_of_element_located((By.CLASS_NAME, "pv-skill-category-list"))
+          )
+        except TimeoutException:
+            print("Timed out waiting for page to load")
+            self.driver.quit()
+            return False  
 
-      # scrap skill
-      profile_skill_item = profile_skill_section.select("span.pv-skill-category-entity__name-text")
-      actor_skill = [skill.getText().strip() for skill in profile_skill_item]
+        # scrap skill
+        profile_skill_item = profile_skill_section.select("span.pv-skill-category-entity__name-text")
+        actor_skill = [skill.getText().strip() for skill in profile_skill_item]
       
 
       # ! Interests
-      interest_item = bs_obj.select("section.pv-interests-section .pv-entity__summary-info h3 span")
-      actor_interest = [item.getText().strip() for item in interest_item]
+      actor_interest = []
+      if bs_obj.select_one("section.pv-interests-section "):
+        interest_item = bs_obj.select("section.pv-interests-section .pv-entity__summary-info h3 span")
+        actor_interest = [item.getText().strip() for item in interest_item]
 
 
       # ! Create actor data set
@@ -235,12 +246,27 @@ class ScrapActor:
       actor_data['skill'] = actor_skill
       actor_data['interest'] = actor_interest
 
+      print(actor_data)
       actors_raw.append(actor_data)
 
-    # dict to json
-    with open('data/actors/' + self.date_now + ".json", 'w') as f:
-      json.dump(actors_raw, f)
+      if os.path.exists(saveURL):
+        with open(saveURL) as json_file:
+          data = json.load(json_file) 
+          temp = data['data']
+          temp.append(actor_data) 
+          self.writeJson(data, saveURL)
+      else:
+        data = actor_data
+        self.writeJson({'data': [data]}, saveURL)
 
+
+    # # dict to json
+    # with open('data/actors/' + self.date_now + ".json", 'w') as f:
+    #   json.dump(actors_raw, f)  
+
+  def writeJson(self, data, filename):
+    with open(filename, 'w') as f:
+      json.dump(data, f, indent=4)
 
 
 if __name__ == "__main__":
