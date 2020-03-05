@@ -151,10 +151,12 @@ class Scrap:
 
   # ! Scrap User Data
   # by useing user url in url directory to scrap user profile
-  def ScrapUserData(self, file):
+  def ScrapUserData(self, file, check=True):
 
+    print(check)
     # ? Validate driver is logged in
-    if not self.Validate(): return self.DRIVER.quit()
+    if check: 
+      if not self.Validate(): return self.DRIVER.quit()
 
     # ? Read user url csv file
     saveURL = 'data/user/' + cfg.BASE_DATE + '.json'
