@@ -133,12 +133,14 @@ class Scrap:
       if os.path.exists(saveURL):
         with open(saveURL) as json_file:
           data = json.load(json_file) 
-          temp = data['data']
-          temp.append(user_href) 
+          temp = data
+          temp.extend(user_href)
           self.writeJson(data, saveURL)
       else:
         data = user_href
-        self.writeJson({'data': [data]}, saveURL)
+        self.writeJson(data, saveURL)
+
+    self.DRIVER.quit()
 
 
     

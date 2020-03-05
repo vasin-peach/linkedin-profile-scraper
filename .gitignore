@@ -1,5 +1,4 @@
-data/*
 debug.log
 Cookies.pkl
-
 !data/actorsURL-11-48-41-21-02-20.csv
+**/__pycache__
