@@ -6,8 +6,14 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException
 from . import config as cfg
 
-import pickle
+import time
+import pandas as pd
+import csv
 import os
+import pickle
+import re
+import time 
+import json
 
 class Scrap:
 
@@ -21,6 +27,10 @@ class Scrap:
     self.DRIVER = webdriver.Chrome(executable_path='C:/chromedriver', chrome_options=OPTIONS)
     self.DRIVER.get('https://www.linkedin.com')
     
+
+  def writeJson(self, data, filename):
+    with open(filename, 'w') as f:
+      json.dump(data, f, indent=4)
 
 
   # ! Login
@@ -96,19 +106,40 @@ class Scrap:
 
   # ! Find User
   # Find user url by linkedin company search
-  def Find(self, keyword="agoda", page_start=1 , page_range=1):
+  def Find(self, keyword="agoda", page_start=1 , page_range=2):
 
-    # Validate driver is logged in
+    # ? Validate driver is logged in
     if not self.Validate(): return self.DRIVER.quit()
 
-    Users = [] # for store user list
 
+    # ? Scrap each page in keyword
     for page in range(page_start, page_range + 1):
 
-
-      # Open driver by `SearchURL`
+      # open driver by `SearchURL`
       SearchURL = f"https://www.linkedin.com/search/results/people/?keywords={keyword}&origin=SUGGESTION&page={page}"
       self.DRIVER.get(SearchURL)
+
+      # scrapt page
+      bs_obj = BS(self.DRIVER.page_source, 'html.parser')
+
+      # find `a` and get href
+      user_list = bs_obj.select("div.search-result__info a.search-result__result-link")
+      user_href = [actor['href'] for actor in user_list]
+
+      # display and save
+      print(f"scraping {keyword} page {page} finish.")
+      
+      saveURL = 'data/url/' + cfg.BASE_DATE + '.json'
+      if os.path.exists(saveURL):
+        with open(saveURL) as json_file:
+          data = json.load(json_file) 
+          temp = data['data']
+          temp.append(user_href) 
+          self.writeJson(data, saveURL)
+      else:
+        data = user_href
+        self.writeJson({'data': [data]}, saveURL)
+
 
     
 
