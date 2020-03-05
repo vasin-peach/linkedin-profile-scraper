@@ -7,6 +7,7 @@ from selenium.common.exceptions import TimeoutException
 from . import config as cfg
 
 import pickle
+import os
 
 class Scrap:
 
@@ -40,18 +41,35 @@ class Scrap:
     # Use to load when open new session
     pickle.dump(new_cookies , open("./Cookies.pkl","wb"))
 
+
+
   # ! Validate Login
   def Validate(self):
 
-    validateURL = f"https://www.linkedin.com/search/results/people/?keywords=agoda&origin=SUGGESTION&page=1"
-    self.DRIVER.get(SearchURL)
+    # ? Assign cookie to driver, auth cookie
+    if os.path.exists("Cookies.pkl"):
+      for cookie in pickle.load(open("Cookies.pkl", "rb")):
+        cookie_new = cookie
+        if cookie.get('expiry') != None: del cookie['expiry']
+        self.DRIVER.add_cookie(cookie)
 
+    validateURL = f"https://www.linkedin.com/search/results/people/?keywords=agoda&origin=SUGGESTION&page=1"
+    self.DRIVER.get(validateURL)
+
+    # ? Validate Login Page
     try: # Wait element class name `actor-name` located 
       element = WebDriverWait(self.DRIVER, 5).until(
         EC.presence_of_element_located((By.CLASS_NAME, "actor-name"))
       )
-      break 
+      return True
     except TimeoutException: # If can't locate `actor-name` element --> login
+
+      # Cookie expire --> delete
+      if os.path.exists("Cookies.pkl"):
+        os.remove("Cookies.pkl")
+
+      # Login
+      self.Login()
       
 
 
