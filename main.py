@@ -3,7 +3,7 @@ from scrap.Scrap import Scrap
 Scrap = Scrap()
 
 def Main():
-  Scrap.Validate()
+  print(Scrap.Find())
   # Scrap.Find()
 
 if __name__ == "__main__":

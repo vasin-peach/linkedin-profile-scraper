@@ -33,13 +33,31 @@ class Scrap:
     self.DRIVER.find_element_by_id("password").send_keys(cfg.PASSWORD)
     self.DRIVER.find_element_by_class_name("from__button--floating").click()
 
-    # Store auth cookie
-    all_cookies = self.DRIVER.get_cookies()
-    new_cookies = all_cookies
+    
+    # ? Validate linkedin is logged in
+    validateURL = f"https://www.linkedin.com/search/results/people/?keywords=agoda&origin=SUGGESTION&page=1"
+    self.DRIVER.get(validateURL)
 
-    # Dump cookie to pkl file
-    # Use to load when open new session
-    pickle.dump(new_cookies , open("./Cookies.pkl","wb"))
+    try: # Wait element class name `actor-name` located 
+      element = WebDriverWait(self.DRIVER, 2).until(
+        EC.presence_of_element_located((By.CLASS_NAME, "actor-name"))
+      )
+
+      # Store auth cookie
+      all_cookies = self.DRIVER.get_cookies()
+      new_cookies = all_cookies
+
+      # Dump cookie to pkl file
+      # Use to load when open new session
+      if not os.path.exists("Cookies.pkl"):
+        pickle.dump(new_cookies , open("./Cookies.pkl","wb"))
+
+      return True
+
+
+    except TimeoutException: # If can't locate `actor-name` element --> login
+      print("Cannot Login")
+      return False
 
 
 
@@ -58,7 +76,7 @@ class Scrap:
 
     # ? Validate Login Page
     try: # Wait element class name `actor-name` located 
-      element = WebDriverWait(self.DRIVER, 5).until(
+      element = WebDriverWait(self.DRIVER, 2).until(
         EC.presence_of_element_located((By.CLASS_NAME, "actor-name"))
       )
       return True
@@ -69,13 +87,19 @@ class Scrap:
         os.remove("Cookies.pkl")
 
       # Login
-      self.Login()
+      if self.Login(): 
+        return True 
+      else: 
+        return False
       
 
 
   # ! Find User
-  # find user url by linkedin company search
-  def Find(self, keyword="agoda", page_start=1 , page_range=10):
+  # Find user url by linkedin company search
+  def Find(self, keyword="agoda", page_start=1 , page_range=1):
+
+    # Validate driver is logged in
+    if not self.Validate(): return self.DRIVER.quit()
 
     Users = [] # for store user list
 
@@ -85,27 +109,6 @@ class Scrap:
       # Open driver by `SearchURL`
       SearchURL = f"https://www.linkedin.com/search/results/people/?keywords={keyword}&origin=SUGGESTION&page={page}"
       self.DRIVER.get(SearchURL)
-
-
-      # ? Validate Login
-      try_range = 1
-      for _try in range(0, try_range):
-        # Wait element class name `actor-name` located 
-        try: 
-            element = WebDriverWait(self.DRIVER, 5).until(
-              EC.presence_of_element_located((By.CLASS_NAME, "actor-name"))
-            )
-            break 
-        # If can't locate `actor-name` element --> login
-        except TimeoutException: 
-
-          if try_range == _try: 
-            self.DRIVER.quit()
-            raise
-
-          print("Timeout --> Try Login", _try + 1)
-          self.Login()
-
 
     
 
