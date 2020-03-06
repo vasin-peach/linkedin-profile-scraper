@@ -66,7 +66,7 @@ class Scrap:
 
 
     except TimeoutException: # If can't locate `actor-name` element --> login
-      print("Cannot Login")
+      print("Cannot Login, username or password was wrong")
       return False
 
 
