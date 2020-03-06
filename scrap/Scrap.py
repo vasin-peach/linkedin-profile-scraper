@@ -106,7 +106,7 @@ class Scrap:
 
   # ! Scrap User URL
   # Find user url by linkedin keyword search
-  def ScrapUserURL(self, keyword="agoda", page_start=1 , page_range=2):
+  def ScrapUserURL(self, keyword="agoda", page_start=1 , page_range=2, close=False):
 
     # ? Validate driver is logged in
     if not self.Validate(): return self.DRIVER.quit()
@@ -144,16 +144,15 @@ class Scrap:
         self.writeJson(data, saveURL)
 
     # close browser
-    self.DRIVER.quit()
+    if close: self.DRIVER.quit()
 
     # return save file
-    return saveURL
+    return self.ScrapUserData(saveURL)
 
   # ! Scrap User Data
   # by useing user url in url directory to scrap user profile
   def ScrapUserData(self, file, check=True):
 
-    print(check)
     # ? Validate driver is logged in
     if check: 
       if not self.Validate(): return self.DRIVER.quit()
