@@ -7,12 +7,10 @@ from selenium.common.exceptions import TimeoutException
 from . import config as cfg
 
 import time
-import pandas as pd
 import csv
 import os
 import pickle
 import re
-import time 
 import json
 
 class Scrap:
@@ -24,7 +22,7 @@ class Scrap:
     OPTIONS = webdriver.ChromeOptions();
     # OPTIONS.add_argument('headless'); # invisible browser
     OPTIONS.add_argument('window-size=1200x600');
-    self.DRIVER = webdriver.Chrome(executable_path='C:/chromedriver', chrome_options=OPTIONS)
+    self.DRIVER = webdriver.Chrome(executable_path=cfg.DRIVER_PATH, chrome_options=OPTIONS)
     self.DRIVER.get('https://www.linkedin.com')
     
 
