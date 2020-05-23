@@ -106,16 +106,21 @@ class Scrap:
 
   # ! Scrap User URL
   # Find user url by linkedin keyword search
-  def ScrapUserURL(self, keyword="agoda", page_start=1 , page_range=2, close=False):
+  def ScrapUserURL(self, keyword="agoda", size=80, close=False):
 
     # ? Validate driver is logged in
     if not self.Validate(): return self.DRIVER.quit()
 
     saveURL = 'data/url/' + cfg.BASE_DATE + '.json'
 
+    page = 0
+    currentSize = 0
+
 
     # ? Scrap each page in keyword
-    for page in range(page_start, page_range + 1):
+    # for page in range(page_start, page_range + 1):
+    while(currentSize < size):
+      page+=1
 
       # open driver by `SearchURL`
       SearchURL = f"https://www.linkedin.com/search/results/people/?keywords={keyword}&origin=SUGGESTION&page={page}"
@@ -128,10 +133,10 @@ class Scrap:
       user_list = bs_obj.select("div.search-result__info a.search-result__result-link")
       user_href = [user['href'] for user in user_list]
       user_href = list(filter(lambda user: user != "#", user_href))
+      currentSize += len(user_href)
 
       # display and save
-      print(f"scraping {keyword} page {page} finish.")
-      
+      print(f"scraping {keyword} page {page} current user is: {currentSize}")
       
       if os.path.exists(saveURL):
         with open(saveURL) as json_file:
@@ -147,11 +152,11 @@ class Scrap:
     if close: self.DRIVER.quit()
 
     # return save file
-    return self.ScrapUserData(saveURL)
+    return self.ScrapUserData(saveURL, keyword)
 
   # ! Scrap User Data
   # by useing user url in url directory to scrap user profile
-  def ScrapUserData(self, file, check=True):
+  def ScrapUserData(self, file, keyword, check=True, ):
 
     # ? Validate driver is logged in
     if check: 
@@ -181,7 +186,7 @@ class Scrap:
           scheight += .1
         
         element = WebDriverWait(self.DRIVER, 10).until(
-          EC.presence_of_element_located((By.CLASS_NAME, "experience-section"))
+          EC.presence_of_element_located((By.CLASS_NAME, "profile-background-image"))
         )
 
       except TimeoutException:
@@ -227,7 +232,7 @@ class Scrap:
       if bs_obj.select_one(".education-section"):
         profile_education_item = profile_section[1].select("div.pv-entity__summary-info")
         for item in profile_education_item:
-          user_education.append(item.select_one("h3.pv-entity__school-name").getText())
+          user_education.append(item.select_one("h3.pv-entity__school-name").getText()) if item.select_one("h3.pv-entity__school-name") else ""
 
 
 
@@ -238,14 +243,14 @@ class Scrap:
         bs_obj = BS(self.DRIVER.page_source, 'html.parser') # new parser
         profile_skill_section = bs_obj.select_one("section.pv-skill-categories-section")
 
-        try:
-          element = WebDriverWait(self.DRIVER, 10).until(
-              EC.presence_of_element_located((By.CLASS_NAME, "pv-skill-category-list"))
-          )
-        except TimeoutException:
-            print("Timed out waiting for page to load")
-            self.DRIVER.quit()
-            return False  
+        # try:
+        element = WebDriverWait(self.DRIVER, 10).until(
+            EC.presence_of_element_located((By.CLASS_NAME, "pv-skill-category-list"))
+        )
+        # except TimeoutException:
+            # print("Timed out waiting for page to load")
+            # self.DRIVER.quit()
+            # return False  
 
         # scrap skill
         profile_skill_item = profile_skill_section.select("span.pv-skill-category-entity__name-text")
@@ -270,6 +275,7 @@ class Scrap:
       user_data['education'] = user_education
       user_data['skill'] = user_skill
       user_data['interest'] = user_interest
+      user_data['search'] = keyword
 
       print(user_data)
 
