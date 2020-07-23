@@ -4,7 +4,7 @@ Scrap = Scrap()
 def Main():
 
   # Scrap User URL
-  Scrap.ScrapUserURL(keyword="Web Developer", size=80) # size is number of user
+  Scrap.ScrapUserURL(keyword="Web Developer", size=20) # size is number of user
 
   # Manual Call Funciton
   # url = "data/url/" + "02-25-24-06-03-20.json"   # file name from use ScrapUserURL
