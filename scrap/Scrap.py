@@ -144,7 +144,7 @@ class Scrap:
       # find `a` and get href
       user_list = bs_obj.select("div.search-result__info a.search-result__result-link")
       user_href = [user['href'] for user in user_list]
-      # print(user_href)
+      print(user_href)
       user_href = list(filter(lambda user: user != "#", user_href))
       currentSize += len(user_href)
 
@@ -203,9 +203,10 @@ class Scrap:
         )
 
       except TimeoutException:
-        print("Timed out waiting for page to load")
-        self.DRIVER.quit()
-        return False
+        print("Timed out waiting for page to load: SKIP!")
+        continue
+        # self.DRIVER.quit()
+        # return False
 
       
       # ? Parse Page
@@ -224,57 +225,64 @@ class Scrap:
 
       
       profile_section = bs_obj.select("section.pv-profile-section--reorder-enabled .pv-profile-section__section-info")
-  
 
 
       # ! Experience
       user_experience = [] 
-      if bs_obj.select_one(".experience-section"):
-        profile_experience_item = profile_section[0].select("div.pv-entity__summary-info")
-        for item in profile_experience_item:
-          position = {}
-          position['name'] = item.h3.getText()
-          position['company'] = item.select_one("p.pv-entity__secondary-title").getText()
-          position['date_range'] = item.select_one("h4.pv-entity__date-range").getText().strip() if item.select_one("h4.pv-entity__date-range") else ""
-          user_experience.append(position)
+      try:
+        if bs_obj.select_one(".experience-section"):
+          profile_experience_item = profile_section[0].select("div.pv-entity__summary-info")
+          for item in profile_experience_item:
+            position = {}
+            position['name'] = item.h3.getText()
+            position['company'] = item.select_one("p.pv-entity__secondary-title").getText()
+            position['date_range'] = item.select_one("h4.pv-entity__date-range").getText().strip() if item.select_one("h4.pv-entity__date-range") else ""
+            user_experience.append(position)
+      except:
+        print("Unable to find experience section")
 
 
 
       # ! Education
       user_education = []
-      if bs_obj.select_one(".education-section"):
-        profile_education_item = profile_section[1].select("div.pv-entity__summary-info")
-        for item in profile_education_item:
-          user_education.append(item.select_one("h3.pv-entity__school-name").getText()) if item.select_one("h3.pv-entity__school-name") else ""
+      try:
+        if bs_obj.select_one(".education-section"):
+          profile_education_item = profile_section[1].select("div.pv-entity__summary-info")
+          for item in profile_education_item:
+            user_education.append(item.select_one("h3.pv-entity__school-name").getText()) if item.select_one("h3.pv-entity__school-name") else ""
+      except:
+        print("Unable to find education section")
 
 
 
       # ! Skill
       user_skill = []
-      if bs_obj.select_one(".pv-skills-section__additional-skills"):
-        self.DRIVER.find_element_by_class_name("pv-skills-section__additional-skills").click() # find showmore button and click
-        bs_obj = BS(self.DRIVER.page_source, 'html.parser') # new parser
-        profile_skill_section = bs_obj.select_one("section.pv-skill-categories-section")
+      try:
+        if bs_obj.select_one(".pv-skills-section__additional-skills"):
+          self.DRIVER.find_element_by_class_name("pv-skills-section__additional-skills").click() # find showmore button and click
+          bs_obj = BS(self.DRIVER.page_source, 'html.parser') # new parser
+          profile_skill_section = bs_obj.select_one("section.pv-skill-categories-section")
 
-        # try:
-        element = WebDriverWait(self.DRIVER, 10).until(
-            EC.presence_of_element_located((By.CLASS_NAME, "pv-skill-category-list"))
-        )
-        # except TimeoutException:
-            # print("Timed out waiting for page to load")
-            # self.DRIVER.quit()
-            # return False  
-
-        # scrap skill
-        profile_skill_item = profile_skill_section.select("span.pv-skill-category-entity__name-text")
-        user_skill = [skill.getText().strip() for skill in profile_skill_item]
+          # try:
+          element = WebDriverWait(self.DRIVER, 10).until(
+              EC.presence_of_element_located((By.CLASS_NAME, "pv-skill-category-list"))
+          )
+          
+          # scrap skill
+          profile_skill_item = profile_skill_section.select("span.pv-skill-category-entity__name-text")
+          user_skill = [skill.getText().strip() for skill in profile_skill_item]
+      except:
+        print("Unable to find skills section")
       
 
       # ! Interests
       user_interest = []
-      if bs_obj.select_one("section.pv-interests-section "):
-        interest_item = bs_obj.select("section.pv-interests-section .pv-entity__summary-info h3 span")
-        user_interest = [item.getText().strip() for item in interest_item]
+      try:
+        if bs_obj.select_one("section.pv-interests-section "):
+          interest_item = bs_obj.select("section.pv-interests-section .pv-entity__summary-info h3 span")
+          user_interest = [item.getText().strip() for item in interest_item]
+      except:
+        print("Unable to find interest section")
 
 
       # ? Create user data set
@@ -290,7 +298,12 @@ class Scrap:
       user_data['interest'] = user_interest
       user_data['search'] = keyword
 
-      print(user_data)
+      print('Name:', user_data['name'])
+      print("-" * 20)
+      print('About:', user_data['about'])
+      print("-" * 20)
+      print('Skills:', ', '.join(user_data['skill']))
+      print("_" * 20, "\n")
 
       user_raw.append(user_data)
 
