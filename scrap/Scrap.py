@@ -144,7 +144,6 @@ class Scrap:
       # find `a` and get href
       user_list = bs_obj.select("div.search-result__info a.search-result__result-link")
       user_href = [user['href'] for user in user_list]
-      print(user_href)
       user_href = list(filter(lambda user: user != "#", user_href))
       currentSize += len(user_href)
 
@@ -165,11 +164,11 @@ class Scrap:
     if close: self.DRIVER.quit()
 
     # return save file
-    # return self.ScrapUserData(saveURL, keyword)
+    return self.ScrapUserData(saveURL, keyword)
 
   # ! Scrap User Data
   # by useing user url in url directory to scrap user profile
-  def ScrapUserData(self, file, keyword, check=True, ):
+  def ScrapUserData(self, file, keyword, check=True):
 
     # ? Validate driver is logged in
     if check: 
